@@ -1,0 +1,73 @@
+version: '3'
+
+# Définition des services
+
+services:
+
+    # Service NGINX
+    nginx:
+      depends_on:
+        - wordpress  # Dépendance du service NGINX sur le service WordPress
+      container_name: nginx  # Nom du conteneur NGINX
+      build: ./requirements/nginx  # Chemin vers le Dockerfile pour construire le conteneur NGINX
+      volumes:
+        - wordpress-vol:/var/www/html  # Montage d'un volume partagé avec le conteneur WordPress pour les fichiers HTML
+      ports:
+        - "443:443"  # Mappage du port 443 du conteneur NGINX sur le port 443 de l'hôte
+      networks:
+        - network  # Utilisation du même réseau pour la communication inter-conteneurs
+      restart: always  # Redémarrage automatique du conteneur en cas d'échec
+
+    # Service WordPress
+    wordpress:
+      depends_on:
+        - mariadb  # Dépendance du service WordPress sur le service MariaDB
+      container_name: wordpress  # Nom du conteneur WordPress
+      build: ./requirements/wordpress  # Chemin vers le Dockerfile pour construire le conteneur WordPress
+      env_file:
+        - .env  # Fichier d'environnement contenant les variables d'environnement nécessaires
+      networks:
+        - network  # Utilisation du même réseau pour la communication inter-conteneurs
+      volumes:
+        - wordpress-vol:/var/www/html  # Montage d'un volume partagé avec le conteneur NGINX pour les fichiers HTML
+      restart: always  # Redémarrage automatique du conteneur en cas d'échec
+
+    # Service MariaDB
+    mariadb:
+      container_name: mariadb  # Nom du conteneur MariaDB
+      build: ./requirements/mariadb  # Chemin vers le Dockerfile pour construire le conteneur MariaDB
+      env_file:
+        - .env  # Fichier d'environnement contenant les variables d'environnement nécessaires
+      networks:
+        - network  # Utilisation du même réseau pour la communication inter-conteneurs
+      volumes:
+        - mariadb-vol:/var/lib/mysql  # Montage d'un volume partagé pour la persistance des données MariaDB
+      restart: always  # Redémarrage automatique du conteneur en cas d'échec
+
+# Définition des volumes
+
+volumes:
+
+  # Volume pour la persistance des données MariaDB
+  mariadb-vol:
+    driver: local
+    name : mariadb-vol
+    driver_opts:
+      type: none
+      device: /home/mvachera/data/mariadb
+      o: bind
+
+  # Volume pour la persistance des fichiers WordPress
+  wordpress-vol:
+    driver: local
+    name : wordpress-vol
+    driver_opts:
+      type: none
+      device: /home/mvachera/data/wordpress
+      o: bind
+
+# Définition du réseau
+
+networks:
+  network:
+    driver: bridge   # Utilisation du driver bridge pour le réseau
